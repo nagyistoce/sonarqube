@@ -23,6 +23,7 @@ import org.sonar.batch.protocol.ProtobufUtil;
 import org.sonar.batch.protocol.output.BatchReport.Issues;
 
 import javax.annotation.CheckForNull;
+
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
@@ -37,7 +38,7 @@ public class BatchReportReader {
 
   public BatchReport.Metadata readMetadata() {
     File file = fileStructure.metadataFile();
-    if (isNotAnExistingFile(file)) {
+    if (!isFileExists(file)) {
       throw new IllegalStateException("Metadata file is missing in analysis report: " + file);
     }
     return ProtobufUtil.readFile(file, BatchReport.Metadata.PARSER);
@@ -45,7 +46,7 @@ public class BatchReportReader {
 
   public List<BatchReport.Measure> readComponentMeasures(int componentRef) {
     File file = fileStructure.fileFor(FileStructure.Domain.MEASURES, componentRef);
-    if (file.exists() && file.isFile()) {
+    if (isFileExists(file)) {
       // all the measures are loaded in memory
       BatchReport.Measures measures = ProtobufUtil.readFile(file, BatchReport.Measures.PARSER);
       return measures.getMeasureList();
@@ -56,7 +57,7 @@ public class BatchReportReader {
   @CheckForNull
   public BatchReport.Scm readComponentScm(int componentRef) {
     File file = fileStructure.fileFor(FileStructure.Domain.SCM, componentRef);
-    if (file.exists() && file.isFile()) {
+    if (isFileExists(file)) {
       BatchReport.Scm scm = ProtobufUtil.readFile(file, BatchReport.Scm.PARSER);
       return scm;
     }
@@ -65,7 +66,7 @@ public class BatchReportReader {
 
   public BatchReport.Component readComponent(int componentRef) {
     File file = fileStructure.fileFor(FileStructure.Domain.COMPONENT, componentRef);
-    if (isNotAnExistingFile(file)) {
+    if (!isFileExists(file)) {
       throw new IllegalStateException("Unable to find report for component #" + componentRef + ". File does not exist: " + file);
     }
     return ProtobufUtil.readFile(file, BatchReport.Component.PARSER);
@@ -73,7 +74,7 @@ public class BatchReportReader {
 
   public List<BatchReport.Issue> readComponentIssues(int componentRef) {
     File file = fileStructure.fileFor(FileStructure.Domain.ISSUES, componentRef);
-    if (file.exists() && file.isFile()) {
+    if (isFileExists(file)) {
       // all the issues are loaded in memory
       BatchReport.Issues issues = ProtobufUtil.readFile(file, BatchReport.Issues.PARSER);
       return issues.getIssueList();
@@ -83,7 +84,7 @@ public class BatchReportReader {
 
   public Issues readDeletedComponentIssues(int deletedComponentRef) {
     File file = fileStructure.fileFor(FileStructure.Domain.ISSUES_ON_DELETED, deletedComponentRef);
-    if (isNotAnExistingFile(file)) {
+    if (!isFileExists(file)) {
       throw new IllegalStateException("Unable to find report for deleted component #" + deletedComponentRef);
     }
     // all the issues are loaded in memory
@@ -92,7 +93,7 @@ public class BatchReportReader {
 
   public List<BatchReport.Duplication> readComponentDuplications(int componentRef) {
     File file = fileStructure.fileFor(FileStructure.Domain.DUPLICATIONS, componentRef);
-    if (file.exists() && file.isFile()) {
+    if (isFileExists(file)) {
       // all the duplications are loaded in memory
       BatchReport.Duplications duplications = ProtobufUtil.readFile(file, BatchReport.Duplications.PARSER);
       return duplications.getDuplicationList();
@@ -102,7 +103,7 @@ public class BatchReportReader {
 
   public List<BatchReport.Symbols.Symbol> readComponentSymbols(int componentRef) {
     File file = fileStructure.fileFor(FileStructure.Domain.SYMBOLS, componentRef);
-    if (file.exists() && file.isFile()) {
+    if (isFileExists(file)) {
       // all the symbols are loaded in memory
       BatchReport.Symbols symbols = ProtobufUtil.readFile(file, BatchReport.Symbols.PARSER);
       return symbols.getSymbolList();
@@ -120,7 +121,16 @@ public class BatchReportReader {
     return Collections.emptyList();
   }
 
-  private boolean isNotAnExistingFile(File file) {
-    return !file.exists() || !file.isFile();
+  @CheckForNull
+  public BatchReport.Coverage readFileCoverage(int fileRef) {
+    File file = fileStructure.fileFor(FileStructure.Domain.COVERAGE, fileRef);
+    if (isFileExists(file)) {
+      return ProtobufUtil.readFile(file, BatchReport.Coverage.PARSER);
+    }
+    return null;
+  }
+
+  private boolean isFileExists(File file) {
+    return file.exists() && file.isFile();
   }
 }
